@@ -66,38 +66,85 @@ Here is the functions you can import and use:
         import seaborn as sns
         # generate code to perform operations from here
         
-        yield "A01 class’s grades are as follows:"  # yield some information and explanation
-        yield "use table: stu_info ,stu_grade"  # yield tables names before query database function
+        yield "A01 class's grades are as follows:"  # yield some information and explanation
+        yield "use table: stu_info, stu_grade"  # yield tables names before query database function
         df = exe_sql(\"\"\"
-            SELECT s.student_id, s.name, g.course, g.score FROM stu_info s
+            SELECT s.student_id, s.name, g.course, g.score 
+            FROM stu_info s
             JOIN stu_grade g ON s.student_id = g.student_id
             WHERE s.class = 'A01'
         \"\"\")   
-        yield df # the result of each step and function call
-        # None or empty DataFrame return handling for each function call.
-        if df == None:
-            yield "The grades for this class were not found in the database"
+        yield df  # the result of each step and function call
+        
+        # Branch 1: Handle None or empty DataFrame
+        if df is None or df.empty:
+            yield "No grade records found for A01 class in the database."
         else:
-            data_description = explain_data("Analysis A01 class’s grades", df)
-            yield data_description
-            yield "The grade histogram is as follows:"
-            plt.figure(figsize=(8, 5))
-            plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
-            plt.xlabel('Score')
-            plt.ylabel('Number of Students')
-            plt.title('A01 Class Grade Distribution')
-            plt.grid(axis='y', alpha=0.3)
-            path = get_save_image_path()
-            plt.savefig(path, dpi=150, bbox_inches='tight')
-            plt.close()
-            yield path
+            # Branch 2: Handle single record
+            if len(df) == 1:
+                record = df.iloc[0]
+                yield f"Only one grade record found: Student {record['name']} ({record['student_id']}) - {record['course']}: {record['score']}"
+            else:
+                # Branch 3: Analyze data and determine visualization strategy
+                unique_courses = df['course'].nunique()
+                unique_students = df['student_id'].nunique()
+                
+                # If analyzing by course (x-axis = course)
+                if unique_courses > 1:
+                    course_stats = df.groupby('course')['score'].mean().reset_index().sort_values('score', ascending=False)
+                    original_count = len(course_stats)
+                    
+                    yield f"Found {unique_students} students with grades across {original_count} courses."
+                    
+                    # Determine display strategy based on number of courses
+                    if original_count <= 8:
+                        # Small number of courses: standard display
+                        plt.figure(figsize=(10, 6))
+                        plt.bar(course_stats['course'], course_stats['score'], color='steelblue', edgecolor='black', alpha=0.7)
+                        plt.xticks(rotation=30, ha='right')
+                    elif original_count <= 15:
+                        # Medium number: larger figure + rotation
+                        plt.figure(figsize=(12, 6))
+                        plt.bar(course_stats['course'], course_stats['score'], color='steelblue', edgecolor='black', alpha=0.7)
+                        plt.xticks(rotation=45, ha='right')
+                        yield f"Displaying all {original_count} courses."
+                    else:
+                        # Too many courses: sampling + user notification
+                        display_df = course_stats.head(12)
+                        yield f"Note: There are {original_count} courses in total, which is too many to display clearly. Showing the top 12 courses by average score. Please modify your question if you want to see specific courses, e.g., 'show only Math and English' or 'show only the top 5 courses'."
+                        plt.figure(figsize=(14, 6))
+                        plt.bar(display_df['course'], display_df['score'], color='steelblue', edgecolor='black', alpha=0.7)
+                        plt.xticks(rotation=45, ha='right')
+                    
+                    plt.xlabel('Course')
+                    plt.ylabel('Average Score')
+                    plt.title('A01 Class Average Score by Course')
+                    plt.grid(axis='y', alpha=0.3)
+                    plt.tight_layout()
+                    path = get_save_image_path()
+                    plt.savefig(path, dpi=150, bbox_inches='tight')
+                    plt.close()
+                    yield path
+                else:
+                    # Single course: show student distribution
+                    yield f"Analyzing score distribution for {df['course'].iloc[0]} across {unique_students} students."
+                    plt.figure(figsize=(10, 6))
+                    plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
+                    plt.xlabel('Score')
+                    plt.ylabel('Number of Students')
+                    plt.title(f'A01 Class Score Distribution - {df["course"].iloc[0]}')
+                    plt.grid(axis='y', alpha=0.3)
+                    path = get_save_image_path()
+                    plt.savefig(path, dpi=150, bbox_inches='tight')
+                    plt.close()
+                    yield path
     ```
     """
 
     remind_prompt = """
     Remind: 
     
-    - Please use yield instead of return and print(), never use input() or any funcs that hung up the process to wait user action!
+    - IMPORTANT: Please use yield instead of return and print(), never use input() or any funcs that hung up the process to wait user action!
     - Please yield explanation string of each step as kind of report! Please yield some information string during the function!
     - Please yield the result of each step and function call! Please yield report many times during the function!!! not only yield at last! 
     - Please yield the tables used before query database function!!!
@@ -106,9 +153,17 @@ Here is the functions you can import and use:
     
     You may draw some graphs with the given third party module.
     
-    - Please save the image instead of show it, never use any funcs that hung up the process to wait user action!
+    - IMPORTANT: Please save the image instead of show it, never use any funcs that hung up the process to wait user action!
     - you can save it only with generated file path: `path = get_save_image_path()`!!!
     - use different path to save different image, `get_save_image_path()` return a unique path each time you call it.
+    - yield the path with single line :`yield path` , never yield the path with other str or tuple.
+    - IMPORTANT: If there are too many x-axis/y-axis labels that would overlap and become unreadable, you MUST take measures:
+        1. Use sampling: only display the first N items or the most important N items (e.g., top 10, top 20)
+        2. Rotate labels by 45 degrees or 90 degrees using `plt.xticks(rotation=45)` or `plt.xticks(rotation=90)`
+        3. Adjust figure size to be larger: `plt.figure(figsize=(width, height))`
+        4. Use horizontal bar chart instead of vertical bar chart when category names are long
+    - After applying these measures, yield a message to remind the user: "Due to too many categories, only the first/top N items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only categories A, B, C'."
+    
     """
 
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
