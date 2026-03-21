@@ -65,8 +65,8 @@ Here is the functions you can import and use:
         import matplotlib.pyplot as plt
         import seaborn as sns
         # generate code to perform operations from here
-        
-        yield "A01 class’s grades are as follows:"  # yield some information and explanation
+
+        yield "A01 class's grades are as follows:"  # yield some information and explanation
         yield "use table: stu_info ,stu_grade"  # yield tables names before query database function
         df = exe_sql(\"\"\"
             SELECT s.student_id, s.name, g.course, g.score FROM stu_info s
@@ -75,29 +75,35 @@ Here is the functions you can import and use:
         \"\"\")   
         yield df # the result of each step and function call
         # None or empty DataFrame return handling for each function call.
-        if df == None:
+        if df is None or df.empty:
             yield "The grades for this class were not found in the database"
-        else:
-            if len(df) > 10:
-                yield "Due to too many courses, only the first 10 items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only courses A, B, C'."
-                df = df.head(10)
-            yield "The grade histogram is as follows:"
-            plt.figure(figsize=(8, 5))
-            plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
-            plt.xlabel('Score')
-            plt.ylabel('Number of Students')
-            plt.title('A01 Class Grade Distribution')
-            plt.grid(axis='y', alpha=0.3)
-            path = get_save_image_path()
-            plt.savefig(path, dpi=150, bbox_inches='tight')
-            plt.close()
-            yield path
+            return
+
+        # IMPORTANT: Handle too many categories BEFORE plotting
+        unique_categories = df['course'].nunique()
+        if unique_categories > 10:
+            yield f"Due to too many courses ({unique_categories}), only the first 10 items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only courses A, B, C'."
+            # Get top 10 most frequent courses
+            top_courses = df['course'].value_counts().head(10).index.tolist()
+            df = df[df['course'].isin(top_courses)]
+
+        yield "The grade histogram is as follows:"
+        plt.figure(figsize=(8, 5))
+        plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
+        plt.xlabel('Score')
+        plt.ylabel('Number of Students')
+        plt.title('A01 Class Grade Distribution')
+        plt.grid(axis='y', alpha=0.3)
+        path = get_save_image_path()
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        yield path
     ```
     """
 
     remind_prompt = """
     Remind: 
-    
+
     - IMPORTANT: Please use yield instead of return and print(), never use input() or any funcs that hung up the process to wait user action!
     - Please yield explanation string of each step as kind of report! Please yield some information string during the function!
     - Please yield the result of each step and function call! Please yield report many times during the function!!! not only yield at last! 
@@ -106,18 +112,36 @@ Here is the functions you can import and use:
     - None or empty DataFrame return handling for each function call is extremely important!
     
     You may draw some graphs with the given third party module.
-    
+
     - IMPORTANT: Please save the image instead of show it, never use any funcs that hung up the process to wait user action!
     - you can save it only with generated file path: `path = get_save_image_path()`!!!
     - use different path to save different image, `get_save_image_path()` return a unique path each time you call it.
     - yield the path with single line :`yield path` , never yield the path in other str or tuple.
-    - IMPORTANT: If there are too many x-axis/y-axis labels that would overlap and become unreadable, you MUST take measures:
-        1. Use sampling: only display the first N items or the most important N items (e.g., top 10, top 5)
-        2. Rotate labels by 45 degrees or 90 degrees using `plt.xticks(rotation=45)` or `plt.xticks(rotation=90)`
-        3. Adjust figure size to be larger: `plt.figure(figsize=(width, height))`
-        4. Use horizontal bar chart instead of vertical bar chart when category names are long
-    - After applying these measures, yield a message to remind the user based on the question (e.g. "Due to too many categories, only the first/top N items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only categories A, B, C'.")
-    - You should use if-else in code to detect whether applying these measures.
+
+    - CRITICAL: Category Overflow Handling (MUST DO BEFORE PLOTTING):
+        1. BEFORE creating any chart, check the number of unique categories in the data that will appear on x-axis or y-axis
+        2. If categories > 10, you MUST:
+           a) First yield a message: "Due to too many categories (N found), only the first/top 10 items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only categories A, B, C'."
+           b) Then ACTUALLY filter the data to keep only top 10 (by count/frequency) or first 10
+           c) Only AFTER filtering, create the plot
+        3. If labels are still long after filtering, rotate them: plt.xticks(rotation=45) or plt.xticks(rotation=90)
+        4. For long category names, consider horizontal bar chart (kind='barh') instead of vertical
+        5. NEVER rotate labels without first filtering the data - rotation alone does not solve overcrowding!
+
+    Data Standardization and Entity Alignment.
+
+    - The user's query terms may NOT match the actual values stored in the database. You MUST handle this mismatch:
+        1. BEFORE querying, check the actual values in the database using DISTINCT or sample queries to understand the data format
+        2. Use case-insensitive matching (e.g., LOWER() or UPPER() functions in SQL, or .str.lower() in pandas)
+        3. Use pattern matching (e.g., LIKE '%china%', regex) when exact match fails
+        4. Handle common variations:
+           - Countries: 'China' may be stored as 'chn', 'CHN', 'PRC', 'CN', 'Mainland China', '中国'
+           - Gender: 'male'/'female' may be 'M'/'F', 'm'/'f', '1'/'0', '男'/'女'
+           - Yes/No: may be 'Y'/'N', 'true'/'false', '1'/'0', '是'/'否'
+           - Abbreviations: 'USA'/'US'/'United States', 'UK'/'United Kingdom'/'GB'
+           - and others ...
+        5. If uncertain about the exact format, query for distinct values first and show them to the user for confirmation
+        6. Yield a message explaining any standardization decisions made (e.g., "Searching for 'China' matched database values: 'CHN', 'PRC'")
     """
 
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
