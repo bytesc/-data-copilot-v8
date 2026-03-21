@@ -93,6 +93,8 @@ Here is the functions you can import and use:
         plt.xlabel('Score')
         plt.ylabel('Number of Students')
         plt.title('A01 Class Grade Distribution')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout() # must use after rotation
         plt.grid(axis='y', alpha=0.3)
         path = get_save_image_path()
         plt.savefig(path, dpi=150, bbox_inches='tight')
