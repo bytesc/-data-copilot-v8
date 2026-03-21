@@ -78,8 +78,9 @@ Here is the functions you can import and use:
         if df == None:
             yield "The grades for this class were not found in the database"
         else:
-            data_description = explain_data("Analysis A01 class’s grades", df)
-            yield data_description
+            if len(df) > 10:
+                yield "Due to too many courses, only the first 10 items are displayed. Please modify your question if you want to see specific items, e.g., 'show only the top 5' or 'show only courses A, B, C'."
+                df = df.head(10)
             yield "The grade histogram is as follows:"
             plt.figure(figsize=(8, 5))
             plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
@@ -111,7 +112,7 @@ Here is the functions you can import and use:
     - use different path to save different image, `get_save_image_path()` return a unique path each time you call it.
     - yield the path with single line :`yield path` , never yield the path in other str or tuple.
     - IMPORTANT: If there are too many x-axis/y-axis labels that would overlap and become unreadable, you MUST take measures:
-        1. Use sampling: only display the first N items or the most important N items (e.g., top 10, top 20)
+        1. Use sampling: only display the first N items or the most important N items (e.g., top 10, top 5)
         2. Rotate labels by 45 degrees or 90 degrees using `plt.xticks(rotation=45)` or `plt.xticks(rotation=90)`
         3. Adjust figure size to be larger: `plt.figure(figsize=(width, height))`
         4. Use horizontal bar chart instead of vertical bar chart when category names are long

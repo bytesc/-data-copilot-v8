@@ -20,6 +20,11 @@ Here is the table and column comments:
 Here is data samples(just samples, do not mock any data):
 """
         data_prompt += str(get_rows_from_all_tables(engine, tables, 3))
+
+    other_info = """
+    Use MySql Dialect.
+    """
+    data_prompt += other_info
     return data_prompt
 
 
