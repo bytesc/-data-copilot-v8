@@ -38,7 +38,7 @@ def get_cot_code_prompt(question, tables=None, use_all_functions=False):
     # print(function_info)
     if function_info == "solved":
         return "solved", rag_ans, []
-    print(function_info)
+    # print(function_info)
 
     database = ""
     if query_database in function_set or exe_sql in function_set:
