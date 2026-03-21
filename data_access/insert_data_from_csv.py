@@ -19,11 +19,12 @@ def pandas_type_to_sqlalchemy(dtype, max_length=None):
     elif pd.api.types.is_bool_dtype(dtype):
         return Boolean()
     else:
-        # 对于字符串类型，计算最大长度
-        if max_length is not None and max_length > 255:
-            return Text() if max_length > 4000 else VARCHAR(max_length)
+        # 保守策略：任何不确定或长文本都用 Text()
+        # MySQL 的 TEXT 类型不计入 65535 行大小限制
+        if max_length is None or max_length > 2000:
+            return Text()
         else:
-            return VARCHAR(255)
+            return VARCHAR(max_length)
 
 
 def process_csv_to_database(file_content: bytes, table_name: str = "uploaded_data"):
