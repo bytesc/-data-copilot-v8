@@ -13,13 +13,18 @@ from .tools.copilot.sql_code import get_db_info_prompt
 from .tools.get_function_info import get_function_info
 
 from .utils.final_output_parse import df_to_markdown, wrap_html_url_with_html_a, \
-    wrap_csv_url_with_html_a
+    wrap_csv_url_with_html_a, is_local_png_path
 from .utils.final_output_parse import wrap_png_url_with_markdown_image, is_png_url, is_iframe_tag
+from .utils.get_config import config_data
 from .utils.pd_to_csv import pd_to_csv
 from .utils.pd_to_walker import pd_to_walker
 
+STATIC_URL = config_data['static_path']
+
 IMPORTANT_MODULE = ["import math"]
-THIRD_MODULE = ["import pandas as pd", "import numpy as np"]
+THIRD_MODULE = ["import pandas as pd", "import numpy as np",
+                "import PIL", "import matplotlib",
+                "import matplotlib.pyplot as plt", "import seaborn as sns"]
 
 
 def get_cot_code_prompt(question, tables=None, use_all_functions=False):
@@ -42,51 +47,23 @@ def get_cot_code_prompt(question, tables=None, use_all_functions=False):
 
     pre_prompt = """ 
 Please use the following functions to solve the problem.
-Please yield explanation string of each step as kind of report!
-Please yield some information string during the function!
-Please yield the result of each step and function call!
-Please yield report many times during the function!!! not only yield at last! 
-Please yield the tables used before query database function!!!
-None or empty DataFrame return handling for each function call is extremely important.
-If the user just ask to introduce or explain something, just yield the answer text in code without function call.
 """
     function_prompt = """ 
 Here is the functions you can import and use:
 """
     module_prompt = "You can only use the third party function in " + str(THIRD_MODULE) + " !!!"
 
-    #     example_code = """
-    # Here is an example:
-    # ```python
-    # def func():
-    #     import pandas as pd
-    #     import math
-    #     # generate code to perform operations here
-    #
-    #     original_question = "show me the grades of a A01 class?"
-    #
-    #     yield "A01 class’s grades are as follows:"  # yield some information and explanation
-    #     yield "use table: stu_info ,stu_grade"  # yield tables names before query database function
-    #     df = query_database("The grades of a A01 class, use table stu_info ,stu_grade", "Name, Course_name, Grade")
-    #     yield df  # the result of each step and function call
-    #     # None or empty DataFrame return handling for each function call.
-    #     if df == None:
-    #         yield "The grades for this class were not found in the database"
-    #     else:
-    #         data_description = explain_data("Analysis A01 class’s grades", df)
-    #         yield data_description
-    #         yield "The grade histogram is as follows:"
-    #         path = draw_graph("Draw a bar chart", df)
-    #         yield path
-    # ```
-    # """
-
     example_code = """
     Here is an example: 
     ```python
     def func():
-        import pandas as pd
         import math
+        import pandas as pd
+        import numpy as np
+        import PIL
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         # generate code to perform operations from here
         
         yield "A01 class’s grades are as follows:"  # yield some information and explanation
@@ -104,13 +81,39 @@ Here is the functions you can import and use:
             data_description = explain_data("Analysis A01 class’s grades", df)
             yield data_description
             yield "The grade histogram is as follows:"
-            path = draw_graph("Draw a bar chart", df) # use different type of chart based on the situation
+            plt.figure(figsize=(8, 5))
+            plt.hist(df['score'], bins=8, edgecolor='black', alpha=0.7, color='steelblue')
+            plt.xlabel('Score')
+            plt.ylabel('Number of Students')
+            plt.title('A01 Class Grade Distribution')
+            plt.grid(axis='y', alpha=0.3)
+            path = get_save_image_path()
+            plt.savefig(path, dpi=150, bbox_inches='tight')
+            plt.close()
             yield path
     ```
     """
+
+    remind_prompt = """
+    Remind: 
+    
+    - Please use yield instead of return and print(), never use input() or any funcs that hung up the process to wait user action!
+    - Please yield explanation string of each step as kind of report! Please yield some information string during the function!
+    - Please yield the result of each step and function call! Please yield report many times during the function!!! not only yield at last! 
+    - Please yield the tables used before query database function!!!
+    - If the user just ask to introduce or explain something, just yield the answer text in code without function call.
+    - None or empty DataFrame return handling for each function call is extremely important!
+    
+    You may draw some graphs with the given third party module.
+    
+    - Please save the image instead of show it, never use any funcs that hung up the process to wait user action!
+    - you can save it only with generated file path: `path = get_save_image_path()`!!!
+    - use different path to save different image, `get_save_image_path()` return a unique path each time you call it.
+    """
+
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
                  function_prompt + str(function_info) + \
-                 module_prompt + example_code
+                 module_prompt + example_code + remind_prompt
     return cot_prompt, rag_ans, function_import
 
 
@@ -153,6 +156,8 @@ def cot_agent(question, tables=None, use_all_functions=False, retries=2, print_r
                             cot_ans += wrap_csv_url_with_html_a(csv_link)
                         elif isinstance(item, str) and is_png_url(item):
                             cot_ans += "\n" + wrap_png_url_with_markdown_image(item) + "\n"
+                        elif isinstance(item, str) and is_local_png_path(item):
+                            cot_ans += "\n" + wrap_png_url_with_markdown_image(STATIC_URL + item[2:]) + "\n"
                         elif is_iframe_tag(str(item)):
                             cot_ans += "\n" + str(item) + "\n"
                         else:

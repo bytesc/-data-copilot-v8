@@ -1,13 +1,15 @@
 from .copilot.utils.call_llm_test import call_llm
-from .tools_def import draw_graph, query_database, explain_data, exe_sql, draw_compare_graph, load_data
+from .tools_def import draw_graph, query_database, explain_data, exe_sql, draw_compare_graph, load_data, \
+    get_save_image_path
 
 FUNCTION_DICT = {
     # "query_database": query_database,
     # "draw_graph": draw_graph,
-    "draw_compare_graph": draw_compare_graph,
-    # "explain_data": explain_data,
+    # "draw_compare_graph": draw_compare_graph,
+    "explain_data": explain_data,
     "exe_sql": exe_sql,
-    "load_data": load_data
+    "load_data": load_data,
+    "get_save_image_path": get_save_image_path,
 }
 
 FUNCTION_IMPORT = {
@@ -17,6 +19,7 @@ FUNCTION_IMPORT = {
     draw_compare_graph: "from agent.tools.tools_def import draw_compare_graph",
     exe_sql: "from agent.tools.tools_def import exe_sql",
     load_data: "from agent.tools.tools_def import load_data",
+    get_save_image_path: "from agent.tools.tools_def import get_save_image_path",
 }
 
 ASSIST_FUNCTION_DICT = {

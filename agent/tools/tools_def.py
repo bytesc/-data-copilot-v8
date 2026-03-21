@@ -4,8 +4,12 @@ import sqlalchemy
 from agent.utils.get_config import config_data
 from agent.utils.llm_access.LLM import get_llm
 from .copilot.data_explanation import get_llm_data_explanation_func
+from .copilot.examples.path_tools import generate_img_path
 from .copilot.utils.read_db import execute_select
 from .data_trans.download_csv_to_pd import download_csv_to_dataframe, extract_csv_filename_from_url, read_csv_from_local
+from .copilot.sql_code import query_database_func
+from .copilot.python_code import draw_graph_func, draw_compare_graph_func
+
 
 DATABASE_URL = config_data['mysql']
 engine = sqlalchemy.create_engine(DATABASE_URL)
@@ -14,8 +18,7 @@ STATIC_URL = config_data['static_path']
 
 llm = get_llm()
 
-from .copilot.sql_code import query_database_func
-from .copilot.python_code import draw_graph_func, draw_compare_graph_func
+
 
 
 def query_database(question: str, df_cols: str | list = None) -> pd.DataFrame:
@@ -236,3 +239,49 @@ def load_data(url: str) -> pd.DataFrame:
     df = read_csv_from_local("./tmp_imgs/"+file_name)
     return df
 
+
+def get_save_image_path() -> str:
+    """
+       get_save_image_path() -> str:
+       get the path to save the generated graph image, you can only save it in the generated path, not anywhere else
+       Returns str path to save the png image, the path include the `.png` file name.
+
+       Returns:
+       - str: A unique path to save the png graph image, the path include the file name.
+       Example:
+       ```python
+        def func(data_dict):
+            import pandas as pd
+            import math
+            import numpy as np
+            import PIL
+            import matplotlib
+            import matplotlib.pyplot as plt
+            plt.rcParams['font.family'] = 'SimHei'
+
+            # Data
+            x = data_dict['x']
+            y1 = data_dict['y1']
+            y2 = data_dict['y2']
+
+            # Plot
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.bar(x, y1, label='A', color='steelblue')
+            ax.bar(x, y2, bottom=y1, label='B', color='coral')
+
+            ax.set_xlabel('Month')
+            ax.set_ylabel('Sales')
+            ax.set_title('Monthly Sales Comparison')
+            ax.legend()
+
+            # Get path to save the image
+            path = get_save_image_path()
+            # (e.g. ./tmp_imgs/imqtzywu.png) just an example, get_save_image_path() generates different ramdom path each time.
+            # save the graph image
+            plt.savefig(path)
+            plt.close()
+
+            return path
+       ```
+       """
+    return generate_img_path()

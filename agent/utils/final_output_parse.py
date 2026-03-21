@@ -20,6 +20,13 @@ def is_png_url(s):
     return len(re.findall(url_regex, s)) > 0
 
 
+def is_local_png_path(s):
+    path_regex = re.compile(
+        r'^\./[^"]+\.png$'
+    )
+    return bool(re.match(path_regex, s))
+
+
 def wrap_png_url_with_markdown_image(s):
     url_regex = re.compile(
         r'(http[s]?://[^"]+\.(?:png))'
