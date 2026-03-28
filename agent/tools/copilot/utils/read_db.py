@@ -243,6 +243,22 @@ def execute_sql_2(engine, sql):
             raise e
 
 
+def execute_sql_3(engine, sql):
+    with engine.connect() as connection:
+        statements = [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
+
+        executed_count = 0
+        for statement in statements:
+            try:
+                result = connection.execute(text(statement))
+                executed_count += 1
+                print(f"Executed statement {executed_count}: {statement[:100]}...")
+            except SQLAlchemyError as e:
+                print(f"Error at statement {executed_count + 1}: {e}")
+                raise e  # 或 continue 跳过错误继续执行
+
+        return executed_count
+
 def execute_select(engine, sql):
     try:
         with engine.connect() as connection:

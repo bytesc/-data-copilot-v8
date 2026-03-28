@@ -1,7 +1,7 @@
 from .tools.copilot.sql_code import get_db_info_prompt
 from .tools.copilot.utils import call_llm_test
 from .tools.copilot.utils.parse_output import parse_generated_sql_code
-from .tools.copilot.utils.read_db import execute_sql, execute_sql_2
+from .tools.copilot.utils.read_db import execute_sql, execute_sql_2, execute_sql_3
 from .tools.tools_def import engine, llm
 
 def get_llm_data_comment_func(txt, table):
@@ -21,7 +21,13 @@ Here is the table structure:
     end_prompt = """
 Remind:
 1. All code should be completed in a single markdown code block without any comments, explanations or cmds.
+2. use Mysql dialect
+3.  comments should be short and clear. comments for each colum should be no more than 20 words, comments for table should be no more than 100 words
+4. 生成 MySQL ALTER TABLE 语句为字段添加 COMMENT 时，如果注释文本中包含单引号 '，必须将其转义为两个单引号 ''，否则会导致 1064 语法错误。
 
+示例：
+- 错误：COMMENT 'It''s an example (e.g. '1000')'
+- 正确：COMMENT 'It''s an example (e.g. ''1000'')'
 """
 
     final_prompt = pre_prompt + txt + "\n" + data_prompt + "\n" + end_prompt
@@ -43,5 +49,5 @@ Remind:
 
 def get_llm_data_comment(extracted_text, table_name):
     sql = get_llm_data_comment_func(extracted_text, table_name)
-    execute_sql_2(engine, sql)
+    execute_sql_3(engine, sql)
     return True
