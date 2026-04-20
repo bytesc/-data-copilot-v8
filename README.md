@@ -11,7 +11,7 @@
 
 [个人网站：www.bytesc.top](http://www.bytesc.top)
 
-🔔 如有项目相关问题，欢迎在本项目提出`issue`，我一般会在 24 小时内回复。
+
 
 ## 功能简介
 
