@@ -160,6 +160,7 @@ Here is the functions you can import and use:
 
 def cot_agent(question, tables=None, use_all_functions=False, retries=2, print_rows=5):
     exp = None
+    code = None
     for i in range(retries):
         cot_prompt, rag_ans, function_import = get_cot_code_prompt(question, tables, use_all_functions)
         print(rag_ans)
@@ -218,10 +219,10 @@ def cot_agent(question, tables=None, use_all_functions=False, retries=2, print_r
                     return ans, code
                 except Exception as e:
                     err_msg = "\n" + str(e) + "\n```python\n" + code + "\n```\n"
-                    exp = e
+                    exp = str(e)
                     print(e)
                     continue
-    return None, None
+    return exp, code
 
 
 def exe_cot_code(code, retries=2, print_rows=5):

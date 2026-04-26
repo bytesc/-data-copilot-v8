@@ -204,10 +204,10 @@ def main():
         else:
             full_question = question
 
-        conversation_history.append(f"Q: {question}")
         with put_loading():
             response, code = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/ask-agent/")
         if response:
+            conversation_history.append(f"Q: {question}")
             conversation_history.append(f"Code Generated: {code}")
             conversation_history.append(f"Exe Result: {response}")
             put_markdown(response, sanitize=False)
@@ -215,7 +215,7 @@ def main():
             put_text("Failed to get a response from the AI Agent.")
 
         context = "\n".join(conversation_history)
-        full_question = f"Context:\n{context}\n\nCurrent Question:\n{question}"
+        full_question = f"Context:\n{context}\n"
         with put_loading():
             step_str, _ = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/")
         if step_str:
