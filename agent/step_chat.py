@@ -42,6 +42,8 @@ Autonomous State Judgment & Update Rules:
 Remind:
 1. You Job is to plan based on the database and functions info given, not general plans.
 2. You should name the database and functions needed on the step.
+3. Use [x] to update todo list or revise it. never return the same list without doing anything!!!
+4. You can use [x] to update multiple items in todo list if more than one is done.
 
 You can use the following functions to solve the problem:
 """
@@ -90,6 +92,7 @@ Response:
 
 
 def get_step_chat(question: str):
+    print(question)
     cot_prompt, rag_ans, function_import = get_step_chat_prompt(question)
     # print(cot_prompt)
     ans = call_llm(cot_prompt, llm)

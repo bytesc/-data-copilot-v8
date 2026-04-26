@@ -179,11 +179,12 @@ def main():
 
     question = textarea("Enter your question here:", type=TEXT, rows=2)
     put_markdown("## " + question)
+    conversation_history.append(f"Q: {question}")
     with put_loading():
         step_str, _ = ai_agent_api(question, SELECT_TABLES, "/api/step-chat/")
     if step_str:
         step_str = textarea("revise plan:", type=TEXT, rows=2, value=step_str)
-        conversation_history.append(f"Planner: {step_str} \n please do the next(or first) step to do on the list")
+        conversation_history.append(f"Planner: {step_str}")
         put_markdown(step_str, sanitize=False)
     else:
         put_text("Failed to get a response from the AI Agent.")
@@ -213,6 +214,8 @@ def main():
         else:
             put_text("Failed to get a response from the AI Agent.")
 
+        context = "\n".join(conversation_history)
+        full_question = f"Context:\n{context}\n\nCurrent Question:\n{question}"
         with put_loading():
             step_str, _ = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/")
         if step_str:

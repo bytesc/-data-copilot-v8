@@ -147,6 +147,9 @@ Here is the functions you can import and use:
            - and others ...
         5. If uncertain about the exact format, query for distinct values first and show them to the user for confirmation
         6. Yield a message explaining any standardization decisions made (e.g., "Searching for 'China' matched database values: 'CHN', 'PRC'")
+    
+    Remind: 
+    1. If there is a todo list in the context, just do the next(or first) step on it.
     """
 
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
