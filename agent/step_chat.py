@@ -92,7 +92,7 @@ Response:
 
 
 def get_step_chat(question: str):
-    print(question)
+    # print(question)
     cot_prompt, rag_ans, function_import = get_step_chat_prompt(question)
     # print(cot_prompt)
     ans = call_llm(cot_prompt, llm)
