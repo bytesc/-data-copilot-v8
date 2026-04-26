@@ -10,35 +10,56 @@ def get_all_table_names(engine):
     return inspector.get_table_names()
 
 
+# def get_rows_from_all_tables(engine, tables, num=3):
+#     # 获取所有表名
+#     inspector = inspect(engine)
+#     if not tables:
+#         table_names = inspector.get_table_names()
+#     else:
+#         table_names = tables
+#
+#     # 准备一个字典来存储每个表的前5行数据
+#     first_five_rows = {}
+#
+#     # 遍历所有表名
+#     for table_name in table_names:
+#         try:
+#             # 构造查询语句，限制返回5行
+#             query = text(f"SELECT * FROM {table_name} LIMIT {num}")
+#
+#             # 使用 pandas 读取查询结果
+#             with engine.connect() as connection:
+#                 df = pd.read_sql(query, connection)
+#
+#             # 将结果存储到字典中
+#             first_five_rows[table_name] = df
+#
+#         except SQLAlchemyError as e:
+#             # 如果发生错误，打印错误信息并继续处理下一个表
+#             print(f"An error occurred while fetching data from table {table_name}: {e}")
+#             continue
+#
+#     return first_five_rows
 def get_rows_from_all_tables(engine, tables, num=3):
-    # 获取所有表名
     inspector = inspect(engine)
     if not tables:
         table_names = inspector.get_table_names()
     else:
         table_names = tables
-
-    # 准备一个字典来存储每个表的前5行数据
     first_five_rows = {}
-
-    # 遍历所有表名
     for table_name in table_names:
         try:
-            # 构造查询语句，限制返回5行
             query = text(f"SELECT * FROM {table_name} LIMIT {num}")
-
-            # 使用 pandas 读取查询结果
             with engine.connect() as connection:
                 df = pd.read_sql(query, connection)
-
-            # 将结果存储到字典中
+            for col in df.columns:
+                if df[col].dtype == object:
+                    df[col] = df[col].apply(lambda x: x[:37] + '...' if isinstance(x, str) and len(x) > 40 else x)
             first_five_rows[table_name] = df
 
         except SQLAlchemyError as e:
-            # 如果发生错误，打印错误信息并继续处理下一个表
             print(f"An error occurred while fetching data from table {table_name}: {e}")
             continue
-
     return first_five_rows
 
 

@@ -26,6 +26,9 @@ THIRD_MODULE = ["import pandas as pd", "import numpy as np",
                 "import PIL", "import matplotlib",
                 "import matplotlib.pyplot as plt", "import seaborn as sns"]
 
+def get_db():
+    return get_db_info_prompt(engine, example=True, simple=True)
+
 
 def get_cot_code_prompt(question, tables=None, use_all_functions=False):
     rag_ans = ""
@@ -42,7 +45,7 @@ def get_cot_code_prompt(question, tables=None, use_all_functions=False):
 
     database = ""
     if query_database in function_set or exe_sql in function_set:
-        data_prompt = get_db_info_prompt(engine, tables=tables, simple=False, example=False)
+        data_prompt = get_db_info_prompt(engine, tables=tables, simple=True, example=False)
         database = "\nThe database content: \n" + data_prompt + "\n"
 
     pre_prompt = """ 

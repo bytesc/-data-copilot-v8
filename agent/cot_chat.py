@@ -17,14 +17,14 @@ def get_cot_chat_prompt(question):
     knowledge = "\nBase knowledge: \n" + rag_ans + "\n"
     database = ""
 
-    function_set, function_info, function_import = get_function_info(question, llm)
+    function_set, function_info, function_import = get_function_info(question, llm, use_all_functions=True)
     # print(function_info)
     if function_info == "solved":
         return "solved", rag_ans, []
     print(function_info)
 
     if query_database in function_set:
-        data_prompt = get_db_info_prompt(engine, simple=True)
+        data_prompt = get_db_info_prompt(engine, example=True, simple=True)
         database = "\nThe database content: \n" + data_prompt + "\n"
 
     pre_prompt = """ 

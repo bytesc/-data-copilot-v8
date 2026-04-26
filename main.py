@@ -13,10 +13,11 @@ from starlette.responses import JSONResponse
 
 from agent.cot_chat import get_cot_chat
 from agent.data_comment import get_llm_data_comment
+from agent.step_chat import get_step_chat
 from data_access.insert_data_from_csv import process_csv_to_database
 from utils.get_config import config_data
 
-from agent.agent import exe_cot_code, get_cot_code, cot_agent
+from agent.agent import exe_cot_code, get_cot_code, cot_agent, get_db
 from agent.summary import get_ans_summary
 from agent.ans_review import get_ans_review
 from utils.process_file import process_file_content
@@ -61,6 +62,8 @@ class ReviewInput(BaseModel):
     code: str
 
 
+# print(get_db())
+
 @app.post("/api/ask-agent/")
 async def ask_agent(request: Request, user_input: AgentInput):
     ans, code = cot_agent(user_input.question, user_input.tables, use_all_functions=True)
@@ -69,7 +72,7 @@ async def ask_agent(request: Request, user_input: AgentInput):
         processed_data = {
             "question": user_input.question,
             "ans": ans,
-            "map": "",
+            "code": code,
             "type": "success",
             "msg": "处理成功"
         }
@@ -77,7 +80,7 @@ async def ask_agent(request: Request, user_input: AgentInput):
         processed_data = {
             "question": user_input.question,
             "ans": "",
-            "map": "",
+            "code": "",
             "type": "error",
             "msg": "处理失败，请换个问法吧"
         }
@@ -183,6 +186,29 @@ async def cot_chat(request: Request, user_input: AgentInput):
         processed_data = {
             "question": user_input.question,
             "ans": "",
+            "type": "error",
+            "msg": "处理失败，请换个问法吧"
+        }
+    return JSONResponse(content=processed_data)
+
+
+@app.post("/api/step-chat/")
+async def step_chat(request: Request, user_input: AgentInput):
+    ans = get_step_chat(user_input.question)
+    print(ans)
+    if ans:
+        processed_data = {
+            "question": user_input.question,
+            "ans": ans,
+            "code":"",
+            "type": "success",
+            "msg": "处理成功"
+        }
+    else:
+        processed_data = {
+            "question": user_input.question,
+            "ans": "",
+            "code": "",
             "type": "error",
             "msg": "处理失败，请换个问法吧"
         }
