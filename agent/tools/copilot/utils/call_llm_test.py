@@ -5,7 +5,9 @@ import os
 
 log_path = "./agent_log.txt"
 
+
 def call_llm(question, llm):
+    print("question len : ", len(question))
     response = llm.chat.completions.create(
         model=config_data["model_name"],
         messages=[
