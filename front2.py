@@ -408,7 +408,7 @@ def main():
     while True:
         table_pre = ""
 
-        value = "please do the next step to do on the list"
+        value = "please do the next step on the todo list"
         question = textarea("What is next?:", value=value, type=TEXT, rows=2)
         put_markdown("## " + question)
         if conversation_history:

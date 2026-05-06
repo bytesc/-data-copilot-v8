@@ -150,6 +150,7 @@ Here is the functions you can import and use:
     
     Remind: 
     1. If there is a todo list in the context, just do the next(or first) step on it.
+    2. If there is a todo list in the context, please follow it and do not do more than one step at a time.
     """
 
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
