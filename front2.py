@@ -195,7 +195,7 @@ def main():
         #     table_pre = "use table:" + str(SELECT_TABLES) + " only!!! \n" + str(SELECT_LABELS) + "\n"
 
         value = "please do the next(or first) step to do on the list"
-        question = textarea("Enter your question here:", value=value, type=TEXT, rows=2)
+        question = textarea("Check the todo list:", value=value, type=TEXT, rows=2)
         put_markdown("## " + question)
         if conversation_history:
             # context = "\n".join(conversation_history[-4:])
@@ -204,18 +204,23 @@ def main():
         else:
             full_question = question
 
-        with put_loading():
-            response, code = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/ask-agent/")
-        if response:
-            conversation_history.append(f"Q: {question}")
-            conversation_history.append(f"Code Generated: {code}")
-            conversation_history.append(f"Exe Result: {response}")
-            put_markdown(response, sanitize=False)
-        else:
-            put_text("Failed to get a response from the AI Agent.")
+        if value == question:
+            with put_loading():
+                response, code = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/ask-agent/")
+            if response:
+                conversation_history.append(f"Q: {question}")
+                conversation_history.append(f"Code Generated: {code}")
+                conversation_history.append(f"Exe Result: {response}")
+                put_markdown(response, sanitize=False)
+            else:
+                put_text("Failed to get a response from the AI Agent.")
 
-        context = "\n".join(conversation_history)
-        full_question = f"Context:\n{context}\n"
+            context = "\n".join(conversation_history)
+            full_question = f"Context:\n{context}\n"
+        else:
+            context = "\n".join(conversation_history)
+            full_question = f"Context:\n{context}\n\nCurrent Question:\n{question}"
+
         with put_loading():
             step_str, _ = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/")
         if step_str:
