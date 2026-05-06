@@ -254,33 +254,6 @@ def export_essentials_to_word(conversation_history):
 
     return file_stream
 
-
-# def handle_export_word(conversation_history, export_type="full"):
-#     """处理导出Word文档"""
-#     if not conversation_history:
-#         toast("No content to export!", color='warning')
-#         return
-#
-#     with put_loading(shape="grow", color="primary"):
-#         try:
-#             if export_type == "full":
-#                 word_file = export_full_to_word(conversation_history)
-#                 filename = "conversation_export_full.docx"
-#                 button_text = "Export Full Conversation"
-#             else:  # essentials
-#                 word_file = export_essentials_to_word(conversation_history)
-#                 filename = "conversation_export_essentials.docx"
-#                 button_text = "Export Essentials (Answers)"
-#
-#             # 创建下载链接
-#             b64 = base64.b64encode(word_file.getvalue()).decode()
-#             href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{filename}">Click here to download Word document</a>'
-#
-#             put_markdown("### Export Successful!")
-#             put_html(href)
-#             toast(f"Word document ({export_type}) ready for download!", color='success')
-#         except Exception as e:
-#             toast(f"Export failed: {str(e)}", color='error')
 def handle_export_word(conversation_history, export_type="full"):
     """处理导出Word文档 - 直接下载"""
     if not conversation_history:
