@@ -1,15 +1,21 @@
 from typing import Optional, List
-
+import io
+import base64
 import httpx
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from pywebio.session import set_env
 from pywebio.input import input, TEXT, textarea, file_upload, select, checkbox
 from pywebio.output import put_text, put_html, put_markdown, clear, put_loading, toast, popup, put_buttons, \
     put_collapse, put_table
 from pywebio import start_server, config
-
 from data_access.read_db import get_rows_from_all_tables, get_table_comments_dict
 from utils.get_config import config_data
-import base64
+import markdown
+from bs4 import BeautifulSoup
+import requests
+from urllib.parse import urlparse
 
 SELECT_TABLES = []
 SELECT_LABELS = []
@@ -17,7 +23,6 @@ SELECT_LABELS = []
 
 def ai_agent_api(question: str, tables: Optional[List[str]] = None, path: str = "/api/ask-agent/",
                  url="http://127.0.0.1:" + str(config_data["server_port"])):
-    # Use httpx to send a request to the /ask-agent/ endpoint of another server
     with httpx.Client(timeout=180.0) as client:
         try:
             payload = {"question": question}
@@ -25,7 +30,6 @@ def ai_agent_api(question: str, tables: Optional[List[str]] = None, path: str = 
                 payload["tables"] = tables
 
             response = client.post(url + path, json=payload)
-            # Check response status code
             if response.status_code == 200:
                 print(response.json()["ans"])
                 return response.json()["ans"], response.json()["code"]
@@ -33,7 +37,6 @@ def ai_agent_api(question: str, tables: Optional[List[str]] = None, path: str = 
                 return None
         except httpx.RequestError as e:
             print(e)
-            # Handle request error
             return None
 
 
@@ -74,6 +77,246 @@ def upload_doc_api(file_content, filename, table_name="uploaded_data"):
         except httpx.RequestError as e:
             return {"error": f"{str(e)}"}
 
+
+def download_image(url):
+    """下载网络图片"""
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return io.BytesIO(response.content)
+    except:
+        pass
+    return None
+
+
+def markdown_to_word(doc, markdown_text):
+    """将Markdown转换为Word文档内容"""
+    html = markdown.markdown(markdown_text, extensions=['extra', 'tables'])
+    soup = BeautifulSoup(html, 'html.parser')
+
+    for element in soup.children:
+        if element.name == 'h1':
+            doc.add_heading(element.get_text(), level=1)
+        elif element.name == 'h2':
+            doc.add_heading(element.get_text(), level=2)
+        elif element.name == 'h3':
+            doc.add_heading(element.get_text(), level=3)
+        elif element.name == 'h4':
+            doc.add_heading(element.get_text(), level=4)
+        elif element.name == 'p':
+            p = doc.add_paragraph()
+            # 处理段落中的内联元素
+            for child in element.children:
+                if child.name == 'strong' or child.name == 'b':
+                    run = p.add_run(child.get_text())
+                    run.bold = True
+                elif child.name == 'em' or child.name == 'i':
+                    run = p.add_run(child.get_text())
+                    run.italic = True
+                elif child.name == 'a':
+                    run = p.add_run(child.get_text())
+                    run.underline = True
+                    # 可以添加超链接
+                    # doc.add_hyperlink(child.get_text(), child.get('href'))
+                elif child.name == 'img':
+                    img_url = child.get('src')
+                    if img_url:
+                        img_data = download_image(img_url)
+                        if img_data:
+                            try:
+                                doc.add_picture(img_data, width=Inches(5))
+                            except:
+                                p.add_run(f"[图片: {img_url}]")
+                        else:
+                            p.add_run(f"[图片加载失败: {img_url}]")
+                elif child.string:
+                    p.add_run(child.string)
+                elif child.name is None:
+                    if child.strip():
+                        p.add_run(child.strip())
+        elif element.name == 'ul':
+            for li in element.find_all('li', recursive=False):
+                doc.add_paragraph(li.get_text(), style='List Bullet')
+        elif element.name == 'ol':
+            for idx, li in enumerate(element.find_all('li', recursive=False), 1):
+                doc.add_paragraph(f"{idx}. {li.get_text()}", style='List Number')
+        elif element.name == 'table':
+            rows = element.find_all('tr')
+            if rows:
+                table = doc.add_table(rows=len(rows), cols=len(rows[0].find_all(['td', 'th'])))
+                table.style = 'Table Grid'
+                for i, row in enumerate(rows):
+                    cells = row.find_all(['td', 'th'])
+                    for j, cell in enumerate(cells):
+                        table.cell(i, j).text = cell.get_text().strip()
+        elif element.name == 'blockquote':
+            p = doc.add_paragraph()
+            p.add_run(element.get_text()).italic = True
+            p.paragraph_format.left_indent = Inches(0.5)
+        elif element.name == 'hr':
+            doc.add_page_break()
+        elif element.name == 'br':
+            doc.add_paragraph()
+        elif element.string and element.string.strip():
+            # 处理纯文本内容
+            doc.add_paragraph(element.string.strip())
+
+
+def export_full_to_word(conversation_history):
+    """导出完整的对话历史为Word文档"""
+    doc = Document()
+
+    # 添加标题
+    title = doc.add_heading('Data-Copilot Conversation Export (Full)', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # 添加导出时间
+    from datetime import datetime
+    doc.add_paragraph(f"Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    doc.add_paragraph()
+
+    # 处理每条对话
+    for entry in conversation_history:
+        if entry.startswith('Q: '):
+            doc.add_heading('Question:', level=2)
+            doc.add_paragraph(entry[3:])
+        elif entry.startswith('A: '):
+            doc.add_heading('Answer:', level=2)
+            markdown_to_word(doc, entry[3:])
+        elif entry.startswith('Code Generated: '):
+            doc.add_heading('Generated Code:', level=2)
+            code_para = doc.add_paragraph()
+            code_run = code_para.add_run(entry[16:])
+            code_run.font.name = 'Courier New'
+            code_run.font.size = Pt(10)
+        elif entry.startswith('Exe Result: '):
+            doc.add_heading('Execution Result:', level=2)
+            markdown_to_word(doc, entry[12:])
+        elif entry.startswith('Planner: '):
+            doc.add_heading('Plan:', level=2)
+            markdown_to_word(doc, entry[9:])
+        else:
+            doc.add_paragraph(entry)
+
+        # 添加分隔线
+        doc.add_paragraph('_' * 50)
+
+    # 保存到内存
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    return file_stream
+
+
+def export_essentials_to_word(conversation_history):
+    """只导出答案(ans)和第一个问题（去除标签，只输出内容，不包含代码）"""
+    doc = Document()
+
+    # 添加标题
+    title = doc.add_heading('Data-Copilot Export', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # 添加导出时间
+    from datetime import datetime
+    doc.add_paragraph(f"Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    doc.add_paragraph()
+
+    # 提取第一个问题
+    first_question = None
+    answers = []
+
+    for entry in conversation_history:
+        if entry.startswith('Q: ') and first_question is None:
+            first_question = entry[3:]  # 去除 "Q: " 前缀
+        elif entry.startswith('A: '):
+            answers.append(entry[3:])  # 去除 "A: " 前缀
+
+    if first_question:
+        doc.add_paragraph(first_question)
+        doc.add_paragraph()
+
+    # 导出所有答案（只输出答案内容，不加任何标签）
+    if answers:
+        for answer in answers:
+            # 只输出答案内容，不添加任何标签
+            markdown_to_word(doc, answer)
+            doc.add_paragraph()  # 添加空行分隔不同的答案
+
+    # 如果没有找到内容
+    if not first_question and not answers:
+        doc.add_paragraph("No essential content found to export.")
+
+    # 保存到内存
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    return file_stream
+
+
+# def handle_export_word(conversation_history, export_type="full"):
+#     """处理导出Word文档"""
+#     if not conversation_history:
+#         toast("No content to export!", color='warning')
+#         return
+#
+#     with put_loading(shape="grow", color="primary"):
+#         try:
+#             if export_type == "full":
+#                 word_file = export_full_to_word(conversation_history)
+#                 filename = "conversation_export_full.docx"
+#                 button_text = "Export Full Conversation"
+#             else:  # essentials
+#                 word_file = export_essentials_to_word(conversation_history)
+#                 filename = "conversation_export_essentials.docx"
+#                 button_text = "Export Essentials (Answers)"
+#
+#             # 创建下载链接
+#             b64 = base64.b64encode(word_file.getvalue()).decode()
+#             href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{filename}">Click here to download Word document</a>'
+#
+#             put_markdown("### Export Successful!")
+#             put_html(href)
+#             toast(f"Word document ({export_type}) ready for download!", color='success')
+#         except Exception as e:
+#             toast(f"Export failed: {str(e)}", color='error')
+def handle_export_word(conversation_history, export_type="full"):
+    """处理导出Word文档 - 直接下载"""
+    if not conversation_history:
+        toast("No content to export!", color='warning')
+        return
+
+    with put_loading(shape="grow", color="primary"):
+        try:
+            if export_type == "full":
+                word_file = export_full_to_word(conversation_history)
+                filename = "conversation_export_full.docx"
+            else:  # essentials
+                word_file = export_essentials_to_word(conversation_history)
+                filename = "conversation_export_essentials.docx"
+
+            # 读取文件内容并编码为base64用于直接下载
+            file_content = word_file.getvalue()
+            b64 = base64.b64encode(file_content).decode()
+
+            # 使用JavaScript触发直接下载
+            download_script = f'''
+            <script>
+                var link = document.createElement('a');
+                link.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}';
+                link.download = '{filename}';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            </script>
+            '''
+
+            put_html(download_script)
+            toast(f"Download started: {filename}", color='success')
+
+        except Exception as e:
+            toast(f"Export failed: {str(e)}", color='error')
 
 def handle_csv_upload():
     file_info = file_upload(
@@ -147,17 +390,11 @@ def handle_table_selection(table_options):
         SELECT_LABELS = selected_labels
 
 
-# @config(theme="dark")
 def main():
     global SELECT_TABLES, SELECT_LABELS
     put_markdown("# Data-Copilot")
-    # set_env(output_max_width='90%')
-    # # Load HTML content
-    # with open("DatasetExplorer.html", 'r', encoding='utf-8') as file:
-    #     html_content = file.read()
-    # put_html(html_content)
+
     first_five_rows = get_rows_from_all_tables()
-    # print(first_five_rows)
 
     table_comments = get_table_comments_dict()
     table_options = []
@@ -165,11 +402,17 @@ def main():
         display_name = f"{table_name} ({comment})" if comment else table_name
         table_options.append({'label': display_name, 'value': table_name})
 
-    # 添加表格选择和上传按钮
+    # 添加表格选择、上传和导出按钮
+    put_markdown("### Control Panel")
     put_buttons(['Select Tables', 'Upload CSV File', 'Upload Document File'],
                 onclick=[lambda: handle_table_selection(table_options), handle_csv_upload, handle_doc_upload])
 
-    with put_collapse(f"Tables"):
+    put_markdown("### Export Options")
+    put_buttons(['Export Full Conversation', 'Export Essentials (Answers)'],
+                onclick=[lambda: handle_export_word(conversation_history, "full"),
+                         lambda: handle_export_word(conversation_history, "essentials")])
+
+    with put_collapse(f"Tables Preview"):
         for table_name, rows in first_five_rows.items():
             with put_collapse(f"table {table_name}"):
                 put_text(f"table {table_name} first 5 rows:")
@@ -191,14 +434,11 @@ def main():
 
     while True:
         table_pre = ""
-        # if SELECT_TABLES != []:
-        #     table_pre = "use table:" + str(SELECT_TABLES) + " only!!! \n" + str(SELECT_LABELS) + "\n"
 
         value = "please do the next step to do on the list"
         question = textarea("What is next?:", value=value, type=TEXT, rows=2)
         put_markdown("## " + question)
         if conversation_history:
-            # context = "\n".join(conversation_history[-4:])
             context = "\n".join(conversation_history)
             full_question = f"Context:\n{context}\n\nCurrent Question:\n{question}"
         else:
@@ -210,7 +450,7 @@ def main():
             if response:
                 conversation_history.append(f"Q: {question}")
                 conversation_history.append(f"Code Generated: {code}")
-                conversation_history.append(f"Exe Result: {response}")
+                conversation_history.append(f"A: {response}")
                 put_markdown(response, sanitize=False)
             else:
                 put_text("Failed to get a response from the AI Agent.")
