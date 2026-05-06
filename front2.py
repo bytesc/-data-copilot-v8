@@ -183,7 +183,7 @@ def main():
     with put_loading():
         step_str, _ = ai_agent_api(question, SELECT_TABLES, "/api/step-chat/")
     if step_str:
-        step_str = textarea("revise plan:", type=TEXT, rows=2, value=step_str)
+        step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
         conversation_history.append(f"Planner: {step_str}")
         put_markdown(step_str, sanitize=False)
     else:
@@ -194,8 +194,8 @@ def main():
         # if SELECT_TABLES != []:
         #     table_pre = "use table:" + str(SELECT_TABLES) + " only!!! \n" + str(SELECT_LABELS) + "\n"
 
-        value = "please do the next(or first) step to do on the list"
-        question = textarea("Check the todo list:", value=value, type=TEXT, rows=2)
+        value = "please do the next step to do on the list"
+        question = textarea("What is next?:", value=value, type=TEXT, rows=2)
         put_markdown("## " + question)
         if conversation_history:
             # context = "\n".join(conversation_history[-4:])
@@ -224,7 +224,7 @@ def main():
         with put_loading():
             step_str, _ = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/")
         if step_str:
-            step_str = textarea("revise plan:", type=TEXT, rows=2, value=step_str)
+            step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
             conversation_history.append(f"Planner: {step_str}")
             put_markdown(step_str, sanitize=False)
         else:
