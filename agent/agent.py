@@ -148,9 +148,12 @@ Here is the functions you can import and use:
         5. If uncertain about the exact format, query for distinct values first and show them to the user for confirmation
         6. Yield a message explaining any standardization decisions made (e.g., "Searching for 'China' matched database values: 'CHN', 'PRC'")
     
-    Remind: 
-    1. If there is a todo list in the context, just do the next(or first) step on it.
-    2. If there is a todo list in the context, please follow it and do not do more than one step at a time.
+    **Todo List Execution Rule (Strictly Enforced)**:
+    - If a todo list exists in the context, you MUST execute ONLY the **first incomplete task** on the list.
+    - Stop immediately after completing that task, waiting for the next call.
+    - **DO NOT** execute multiple todo items at once, even if they seem simple.
+    - **DO NOT** skip or pre-execute later tasks.
+    - If the current todo item requires user confirmation or additional information, yield the request and stop. Do NOT proceed to other items.
     """
 
     cot_prompt = "question:" + question + knowledge + database + pre_prompt + \
