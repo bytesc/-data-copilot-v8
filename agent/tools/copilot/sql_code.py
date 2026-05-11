@@ -19,7 +19,7 @@ Here is the table and column comments:
         data_prompt += """
 Here is data samples(just samples, do not mock any data):
 """
-        data_prompt += str(get_rows_from_all_tables(engine, tables, 3))
+        data_prompt += str(get_rows_from_all_tables(engine, tables, 1))
 
     other_info = """
     Use MySql Dialect.
