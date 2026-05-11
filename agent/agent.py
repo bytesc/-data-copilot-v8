@@ -26,6 +26,9 @@ THIRD_MODULE = ["import pandas as pd", "import numpy as np",
                 "import PIL", "import matplotlib",
                 "import matplotlib.pyplot as plt", "import seaborn as sns"]
 
+# print(get_db_info_prompt(engine, simple=True, example=False))
+
+
 def get_db():
     return get_db_info_prompt(engine, example=True, simple=True)
 
