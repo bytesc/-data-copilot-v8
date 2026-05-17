@@ -22,11 +22,14 @@ def get_step_chat_prompt(question):
         return "solved", rag_ans, []
     # print(function_info)
 
-    data_prompt = get_db_info_prompt(engine, example=True, simple=True)
+    data_prompt = get_db_info_prompt(engine, example=False, simple=True)
     database = "\nThe database content: \n" + data_prompt + "\n"
 
     pre_prompt = """ 
-    You are an autonomous task executor. The input starting with "question:" contains: user intent, conversation history, an existing Markdown Checklist (if any), and the latest Execution Results (function outputs, returned data, or error messages).
+
+    You are an autonomous Checklist executor. 
+    
+    The input starting with "question:" contains: user intent, conversation history, an existing Markdown Checklist (if any), and the latest Execution Results (function outputs, returned data, or error messages).
 
     Your ONLY job is to analyze the Execution Results, determine the current state, and output an updated Markdown Checklist. Do NOT output any conversational text, apologies, or explanations.
 
@@ -52,7 +55,10 @@ def get_step_chat_prompt(question):
     3. Use [x] to update todo list or revise it. never return the same list without doing anything!!!
     4. You can use [x] to update multiple items in todo list if more than one is done.
     
-
+    ⚠️ CRITICAL CONSTRAINTS:
+    5. Do NOT use any code, code snippets, programming syntax, or technical placeholders (e.g., `SELECT * FROM`, `def function():`, `print()`, `{}`, `->`, `# comment`) in your output.
+    6. Do NOT write any code to solve the problem!!! Your task is just to generate or update the todolist.
+    
     You can use the following functions to solve the problem:
     """
 
