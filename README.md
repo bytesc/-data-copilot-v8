@@ -34,20 +34,32 @@
 #### **2. 动态工具调用的函数图谱（Function Graph）**  
 - 智能选择最佳工具链，根据任务类型动态组合数据查询、分析与可视化功能。  
 
-#### **3. 多智能体协作层**  
+#### **4. 意图讨论和问题拆解** 
+- 将复杂问题拆解为子任务列表(To-do List)，智能体逐个解决
+- 支持反问用户澄清模糊或不完整的需求
+
+#### **5. 成功历史蒸馏** 
+- 基于历史成功对话蒸馏知识库，新提问时检索相似案例
+- 将成功经验作为示例注入当前对话，借鉴以往解决思路
+
+#### **6. 多智能体协作层**  
 - 通过角色化Agent分工（如数据查询Agent、校验Agent、报告生成Agent）实现复杂任务流水线处理。  
+ 
+ 
 
 ### 工作流程
 
 ![](./readme_img/flow2.png)
 
 基本流程：
-User query → Function selection → Code generation → Execution → Validation
+User query → History Search → Solution breakdown → Function selection → Code generation → Execution → Validation
 1. **Question**: 用户自然语言问题提问
-2. **Function Selection**: LLM 根据函数基本信息选择多个函数，通过函数依赖图(Function Graph)获得可用函数列表和详细注释（函数包括非智能体函数(Custum Function)和调用其它智能体的函数(Agent as Function)，实现多智能体协同）
-3. **Function Skill**: 根据 function 的选择动态提供不同的 prompt 信息(借鉴 skill 的概念)
-4. **Function Calls Chain**: LLM 根据函数列表和详细注释，生成调用多个函数的 python 代码并执行
-5. **Result Review**: LLM 回顾总结整个流程，评估问题是否解决，没有解决则反问用户，使其澄清问题或者提供更多信息
+2. **History Search**: 根据历史成功对话蒸馏知识库，在提问时搜索知识库，借鉴以往成功思路
+3. **Solution breakdown**: 和用户讨论意图，制定解决方案，把复杂问题拆解为子任务列表(To-do List)，智能体逐个解决小问题，最终实现复杂任务的解决。
+4. **Function Selection**: LLM 根据函数基本信息选择多个函数，通过函数依赖图(Function Graph)获得可用函数列表和详细注释（函数包括非智能体函数(Custum Function)和调用其它智能体的函数(Agent as Function)，实现多智能体协同）
+5. **Function Skill**: 根据 function 的选择动态提供不同的 prompt 信息(借鉴 skill 的概念)
+6. **Function Calls Chain**: LLM 根据函数列表和详细注释，生成调用多个函数的 python 代码并执行
+7. **Result Review**: LLM 回顾总结整个流程，评估问题是否解决，更新任务列表，没有解决则反问用户，使其澄清问题或者提供更多信息
 
 
 ### 任意数据导入
