@@ -3,6 +3,8 @@ server_port: 8009
 server_host: "0.0.0.0"
 mysql: "mysql+pymysql://root:123456@localhost:3306/2026start"
 
+mysql_sys: "mysql+pymysql://root:123456@localhost:3306/2026start_sys"
+
 static_path: "http://127.0.0.1:8009/"
 
 model_name: "qwen3.6-max-preview"

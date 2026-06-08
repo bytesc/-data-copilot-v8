@@ -1,3 +1,4 @@
+import time
 from typing import Optional, List
 import io
 import base64
@@ -425,6 +426,7 @@ def main():
                 conversation_history.append(f"Code Generated: {code}")
                 conversation_history.append(f"A: {response}")
                 put_markdown(response, sanitize=False)
+                time.sleep(3)
             else:
                 put_text("Failed to get a response from the AI Agent.")
 
