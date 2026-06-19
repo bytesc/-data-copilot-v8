@@ -16,18 +16,22 @@ Here is the document:
 
     data_prompt = """
 Here is the table structure: 
-""" + data_str
+""" + data_str + """
+only write comment for the specified  table name: 
+""" + table
 
     end_prompt = """
-Remind:
-1. All code should be completed in a single markdown code block without any comments, explanations or cmds.
-2. use Mysql dialect
-3.  comments should be short and clear. comments for each colum should be no more than 20 words, comments for table should be no more than 100 words
-4. 生成 MySQL ALTER TABLE 语句为字段添加 COMMENT 时，如果注释文本中包含单引号 '，必须将其转义为两个单引号 ''，否则会导致 1064 语法错误。
+Reminders:
+1. All code must be completed in a single markdown code block without any comments, explanations, or commands.
+2. Use MySQL 5.7 dialect.
+3. Comments should be short and clear. Column comments should be no more than 20 words. Table comments should be no more than 100 words.
+4. When generating MySQL ALTER TABLE statements to add COMMENT to columns, if the comment text contains a single quote ', it MUST be escaped as two single quotes '', otherwise it will cause a 1064 syntax error.
 
-示例：
-- 错误：COMMENT 'It''s an example (e.g. '1000')'
-- 正确：COMMENT 'It''s an example (e.g. ''1000'')'
+Example:
+- Incorrect: COMMENT 'It''s an example (e.g. '1000')'
+- Correct: COMMENT 'It''s an example (e.g. ''1000'')'
+
+IMPORTANT: You MUST ONLY generate comments for the table specified in the table structure above. Do NOT include any other tables in your output. Focus exclusively on the table named in the schema information provided.
 """
 
     final_prompt = pre_prompt + txt + "\n" + data_prompt + "\n" + end_prompt
