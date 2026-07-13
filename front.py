@@ -3,6 +3,9 @@ from typing import Optional, List
 import io
 import base64
 import httpx
+import random
+import string
+from datetime import datetime
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -23,22 +26,22 @@ SELECT_LABELS = []
 
 
 def ai_agent_api(question: str, tables: Optional[List[str]] = None, path: str = "/api/ask-agent/",
-                 url="http://127.0.0.1:" + str(config_data["server_port"])):
+                 url="http://127.0.0.1:" + str(config_data["server_port"]), session_id: str = ""):
     with httpx.Client(timeout=180.0) as client:
         try:
-            payload = {"question": question}
+            payload = {"question": question, "session_id": session_id}
             if tables:
                 payload["tables"] = tables
 
             response = client.post(url + path, json=payload)
             if response.status_code == 200:
                 print(response.json()["ans"])
-                return response.json()["ans"], response.json()["code"]
+                return response.json()["ans"], response.json()["code"], response.json().get("session_id", "")
             else:
-                return None
+                return None, None, session_id
         except httpx.RequestError as e:
             print(e)
-            return None
+            return None, None, session_id
 
 
 def upload_csv_api(file_content, table_name="uploaded_data"):
@@ -418,14 +421,15 @@ def main():
                 put_table([rows.columns.tolist()] + rows.values.tolist())
 
     conversation_history = []
+    conversation_session_id = datetime.now().strftime("%Y%m%d%H%M%S") + "".join(random.choices(string.ascii_letters + string.digits, k=8))
 
     question = textarea("Enter your question here:", type=TEXT, rows=2)
     put_markdown("## " + question)
     conversation_history.append(f"Q: {question}")
     with put_loading():
-        step_str, _ = ai_agent_api(question, SELECT_TABLES, "/api/step-chat/")
+        step_str, _, conversation_session_id = ai_agent_api(question, SELECT_TABLES, "/api/step-chat/", session_id=conversation_session_id)
     if step_str:
-        step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
+        # step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
         conversation_history.append(f"Planner: {step_str}")
         put_markdown(step_str, sanitize=False)
     else:
@@ -445,7 +449,7 @@ def main():
 
         if value == question:
             with put_loading():
-                response, code = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/ask-agent/")
+                response, code, conversation_session_id = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/ask-agent/", session_id=conversation_session_id)
             if response:
                 conversation_history.append(f"Q: {question}")
                 conversation_history.append(f"Code Generated: {code}")
@@ -462,7 +466,7 @@ def main():
             full_question = f"Context:\n{context}\n\nCurrent Question:\n{question}"
 
         with put_loading():
-            step_str, _ = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/")
+            step_str, _, conversation_session_id = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/", session_id=conversation_session_id)
         if step_str:
             step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
             conversation_history.append(f"Planner: {step_str}")

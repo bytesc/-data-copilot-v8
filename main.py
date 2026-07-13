@@ -57,17 +57,20 @@ async def read_static_file(request: Request, filename: str):
 class AgentInput(BaseModel):
     question: str
     tables: Optional[List[str]] = None
+    session_id: Optional[str] = None
 
 
 class AgentInputDict(BaseModel):
     question: str
     data: dict
+    session_id: Optional[str] = None
 
 
 class ReviewInput(BaseModel):
     question: str
     ans: str
     code: str
+    session_id: Optional[str] = None
 
 
 # print(get_db())
@@ -89,7 +92,8 @@ async def ask_agent(request: Request, user_input: AgentInput):
             "ans": ans,
             "code": code,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
@@ -97,7 +101,8 @@ async def ask_agent(request: Request, user_input: AgentInput):
             "ans": "",
             "code": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -112,14 +117,16 @@ async def exe_code(request: Request, user_input: AgentInput):
             "question": user_input.question,
             "ans": ans,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
             "question": user_input.question,
             "ans": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -162,14 +169,16 @@ async def get_code(request: Request, user_input: ReviewInput):
             "question": user_input.question,
             "ans": ans,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
             "question": user_input.question,
             "ans": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -184,14 +193,16 @@ async def agent_summary(request: Request, user_input: AgentInput):
             "question": user_input.question,
             "ans": ans,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
             "question": user_input.question,
             "ans": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -206,14 +217,16 @@ async def cot_chat(request: Request, user_input: AgentInput):
             "question": user_input.question,
             "ans": ans,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
             "question": user_input.question,
             "ans": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -223,13 +236,15 @@ async def step_chat(request: Request, user_input: AgentInput):
     loop = asyncio.get_event_loop()
     ans = await loop.run_in_executor(executor, get_step_chat, user_input.question)
     print(ans)
+    print(user_input.session_id)
     if ans:
         processed_data = {
             "question": user_input.question,
             "ans": ans,
             "code": "",
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
@@ -237,7 +252,8 @@ async def step_chat(request: Request, user_input: AgentInput):
             "ans": "",
             "code": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
