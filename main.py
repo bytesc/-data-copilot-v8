@@ -141,14 +141,16 @@ async def get_code(request: Request, user_input: AgentInput):
             "question": user_input.question,
             "code": code,
             "type": "success",
-            "msg": "处理成功"
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
         }
     else:
         processed_data = {
             "question": user_input.question,
             "code": "",
             "type": "error",
-            "msg": "处理失败，请换个问法吧"
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
         }
     return JSONResponse(content=processed_data)
 
@@ -258,6 +260,44 @@ async def step_chat(request: Request, user_input: AgentInput):
     return JSONResponse(content=processed_data)
 
 
+@app.post("/api/exe-sql/")
+async def exe_sql(request: Request, user_input: AgentInput):
+    loop = asyncio.get_event_loop()
+    ans = await loop.run_in_executor(executor, execute_select, engine, user_input.question)
+    processed_data = {
+        "ans": ans,
+        "type": "success",
+        "msg": "处理成功",
+        "session_id": user_input.session_id or ""
+    }
+
+    return JSONResponse(content=processed_data)
+
+
+@app.post("/api/get-graph/")
+async def get_graph_api(request: Request, user_input: AgentInputDict):
+    df = pd.DataFrame.from_dict(user_input.data)
+    loop = asyncio.get_event_loop()
+    ans = await loop.run_in_executor(executor, draw_graph, user_input.question, df)
+    if ans:
+        processed_data = {
+            "question": user_input.question,
+            "ans": ans,
+            "type": "success",
+            "msg": "处理成功",
+            "session_id": user_input.session_id or ""
+        }
+    else:
+        processed_data = {
+            "question": user_input.question,
+            "ans": "",
+            "type": "error",
+            "msg": "处理失败，请换个问法吧",
+            "session_id": user_input.session_id or ""
+        }
+    return JSONResponse(content=processed_data)
+
+
 from agent.tools.copilot.utils.read_db import get_rows_from_all_tables, get_table_comments_dict, execute_select, \
     get_all_comments
 from agent.tools.tools_def import engine, llm, draw_graph
@@ -326,51 +366,7 @@ async def table_comments(request: Request):
     return JSONResponse(content=processed_data)
 
 
-@app.post("/api/get-sql/")
-async def get_sql(request: Request):
-    ans = ""
-    processed_data = {
-        "ans": ans,
-        "type": "success",
-        "msg": "处理成功"
-    }
 
-    return JSONResponse(content=processed_data)
-
-
-@app.post("/api/exe-sql/")
-async def exe_sql(request: Request, user_input: AgentInput):
-    loop = asyncio.get_event_loop()
-    ans = await loop.run_in_executor(executor, execute_select, engine, user_input.question)
-    processed_data = {
-        "ans": ans,
-        "type": "success",
-        "msg": "处理成功"
-    }
-
-    return JSONResponse(content=processed_data)
-
-
-@app.post("/api/get-graph/")
-async def get_graph_api(request: Request, user_input: AgentInputDict):
-    df = pd.DataFrame.from_dict(user_input.data)
-    loop = asyncio.get_event_loop()
-    ans = await loop.run_in_executor(executor, draw_graph, user_input.question, df)
-    if ans:
-        processed_data = {
-            "question": user_input.question,
-            "ans": ans,
-            "type": "success",
-            "msg": "处理成功"
-        }
-    else:
-        processed_data = {
-            "question": user_input.question,
-            "ans": "",
-            "type": "error",
-            "msg": "处理失败，请换个问法吧"
-        }
-    return JSONResponse(content=processed_data)
 
 
 @app.post("/upload-csv/")
