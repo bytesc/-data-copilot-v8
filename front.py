@@ -11,12 +11,12 @@ from pywebio.input import input, TEXT, textarea, file_upload, select, checkbox
 from pywebio.output import put_text, put_html, put_markdown, clear, put_loading, toast, popup, put_buttons, \
     put_collapse, put_table
 from pywebio import start_server, config
-from data_access.read_db import get_rows_from_all_tables, get_table_comments_dict
+from data_access.read_db import get_rows_from_all_tables, get_table_comments_dict, get_all_comments_from_table
 from utils.get_config import config_data
 import markdown
 from bs4 import BeautifulSoup
 import requests
-from urllib.parse import urlparse
+
 
 SELECT_TABLES = []
 SELECT_LABELS = []
@@ -386,10 +386,35 @@ def main():
                 onclick=[lambda: handle_export_word(conversation_history, "full"),
                          lambda: handle_export_word(conversation_history, "essentials")])
 
-    with put_collapse(f"Tables Preview"):
+    # with put_collapse(f"Tables Preview"):
+    #     for table_name, rows in first_five_rows.items():
+    #         with put_collapse(f"table {table_name}"):
+    #             put_text(f"table {table_name} first 5 rows:")
+    #             put_table([rows.columns.tolist()] + rows.values.tolist())
+
+    put_markdown("### 📊 Data View")
+    with put_collapse(f"📋 Tables"):
+        # 获取所有注释信息
+        all_comments = get_all_comments_from_table()
+        first_five_rows = get_rows_from_all_tables()
+
         for table_name, rows in first_five_rows.items():
-            with put_collapse(f"table {table_name}"):
-                put_text(f"table {table_name} first 5 rows:")
+            with put_collapse(f" table {table_name}"):
+                # 显示表注释
+                if table_name in all_comments:
+                    table_comment = all_comments[table_name].get('table_comment', '')
+                    if table_comment:
+                        put_text(f"📝 {table_comment}")
+
+                    # 显示列注释（表格形式）
+                    columns = all_comments[table_name].get('columns', {})
+                    if columns:
+                        comment_table = [["Column Name", "Comment"]]
+                        for col_name, comment in columns.items():
+                            comment_table.append([col_name, comment])
+                        put_table(comment_table)
+
+                put_text(f"📊 table {table_name} first 5 rows:")
                 put_table([rows.columns.tolist()] + rows.values.tolist())
 
     conversation_history = []

@@ -175,6 +175,44 @@ def get_table_creation_statements(engine, tables, simple=False):
 
     return creation_statements
 
+def get_all_comments(engine, tables=None):
+    inspector = inspect(engine)
+    # 获取表名列表
+    if not tables:
+        table_names = inspector.get_table_names()
+    else:
+        table_names = tables
+
+    all_comments = {}
+
+    for table_name in table_names:
+        try:
+            table_info = {}
+
+            # 获取表注释
+            table_comment = inspector.get_table_comment(table_name)
+            table_info['table_comment'] = table_comment.get('text', '') if table_comment else ''
+
+            # 获取列注释
+            columns = inspector.get_columns(table_name)
+            column_comments = {}
+            for column in columns:
+                comment = column.get('comment')
+                if comment:
+                    column_comments[column['name']] = comment
+
+            table_info['columns'] = column_comments
+            all_comments[table_name] = table_info
+
+        except SQLAlchemyError as e:
+            print(f"获取表 {table_name} 的注释时出错: {e}")
+            all_comments[table_name] = {
+                'table_comment': '',
+                'columns': {}
+            }
+            continue
+
+    return all_comments
 
 def get_table_comments_dict(engine, tables=None):
     inspector = inspect(engine)
