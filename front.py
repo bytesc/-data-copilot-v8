@@ -469,7 +469,7 @@ def main():
         with put_loading():
             step_str, _, conversation_session_id = ai_agent_api(table_pre + full_question, SELECT_TABLES, "/api/step-chat/", session_id=conversation_session_id)
         if step_str:
-            step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
+            # step_str = textarea("revise plan:", type=TEXT, rows=8, value=step_str)
             conversation_history.append(f"Planner: {step_str}")
             put_markdown(step_str, sanitize=False)
         else:
