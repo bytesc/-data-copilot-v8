@@ -23,6 +23,10 @@ from agent.agent import exe_cot_code, get_cot_code, cot_agent, get_db
 from agent.summary import get_ans_summary
 from agent.ans_review import get_ans_review
 from utils.process_file import process_file_content
+from data_access.session_log import record_session_operation, create_session_log_table
+
+# 启动时确保会话操作记录表已创建
+create_session_log_table()
 
 # DATABASE_URL = config_data['mysql']
 # engine = sqlalchemy.create_engine(DATABASE_URL)
@@ -95,6 +99,10 @@ async def ask_agent(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, code, "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -104,6 +112,10 @@ async def ask_agent(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -120,6 +132,10 @@ async def exe_code(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -128,6 +144,10 @@ async def exe_code(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -144,6 +164,10 @@ async def get_code(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", code, "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -152,6 +176,10 @@ async def get_code(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -174,6 +202,10 @@ async def get_code(request: Request, user_input: ReviewInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -182,6 +214,10 @@ async def get_code(request: Request, user_input: ReviewInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -198,6 +234,10 @@ async def agent_summary(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -206,6 +246,10 @@ async def agent_summary(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -222,6 +266,10 @@ async def cot_chat(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -230,6 +278,10 @@ async def cot_chat(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -248,6 +300,10 @@ async def step_chat(request: Request, user_input: AgentInput):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -257,6 +313,10 @@ async def step_chat(request: Request, user_input: AgentInput):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 
@@ -270,6 +330,10 @@ async def exe_sql(request: Request, user_input: AgentInput):
         "msg": "处理成功",
         "session_id": user_input.session_id or ""
     }
+    record_session_operation(
+        user_input.session_id, request.url.path,
+        user_input.question, str(ans), "", "success", "处理成功"
+    )
 
     return JSONResponse(content=processed_data)
 
@@ -287,6 +351,10 @@ async def get_graph_api(request: Request, user_input: AgentInputDict):
             "msg": "处理成功",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, ans, "", "success", "处理成功"
+        )
     else:
         processed_data = {
             "question": user_input.question,
@@ -295,6 +363,10 @@ async def get_graph_api(request: Request, user_input: AgentInputDict):
             "msg": "处理失败，请换个问法吧",
             "session_id": user_input.session_id or ""
         }
+        record_session_operation(
+            user_input.session_id, request.url.path,
+            user_input.question, "", "", "error", "处理失败，请换个问法吧"
+        )
     return JSONResponse(content=processed_data)
 
 

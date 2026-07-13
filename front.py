@@ -421,7 +421,8 @@ def main():
                 put_table([rows.columns.tolist()] + rows.values.tolist())
 
     conversation_history = []
-    conversation_session_id = datetime.now().strftime("%Y%m%d%H%M%S") + "".join(random.choices(string.ascii_letters + string.digits, k=8))
+    conversation_session_id = datetime.now().strftime("%Y%m%d%H%M%S") + "".join(random.choices(string.ascii_letters, k=8))
+    put_markdown(conversation_session_id)
 
     question = textarea("Enter your question here:", type=TEXT, rows=2)
     put_markdown("## " + question)
